@@ -366,6 +366,11 @@ canvas {
         <input type="number" id="param-heats" value="3" min="1" max="20">
       </div>
     </div>
+    <div style="margin-top:12px;padding:10px 16px;background:#2a6e1a;border:1px solid #4a4;border-radius:6px;text-align:center;">
+      <div style="font-size:11px;color:#8c8">MINECRAFT SERVER</div>
+      <div style="font-size:16px;color:#fff;font-weight:bold;margin:4px 0">PIESKISMP.ATERNOS.ME</div>
+      <div style="font-size:12px;color:#cdc">port 33434 &bull; by Jasix2015</div>
+    </div>
     <button id="btn-start">START</button>
   </div>
 
@@ -390,6 +395,11 @@ canvas {
     <div id="total-scores-list"></div>
   </div>
   <div id="controls"></div>
+  <div id="mc-ad" style="margin-top:8px;padding:8px;background:#2a6e1a;border:1px solid #4a4;border-radius:4px;text-align:center;">
+    <div style="font-size:9px;color:#8c8">MINECRAFT SERVER</div>
+    <div style="font-size:11px;color:#fff;font-weight:bold;margin:2px 0">PIESKISMP.ATERNOS.ME</div>
+    <div style="font-size:9px;color:#cdc">port 33434 &bull; by Jasix2015</div>
+  </div>
 </div>
 
 <script>
@@ -523,13 +533,12 @@ function drawPixelBoys(centerX, centerY) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
-  // Minecraft block pixel art (small pickaxe)
-  const px = 3;
+  // Minecraft grass block pixel art
+  const px = 4;
   function dot(x, y, c) {
     ctx.fillStyle = c;
-    ctx.fillRect(centerX + x * px - 12, centerY + y * px - 32, px, px);
+    ctx.fillRect(centerX + x * px - 16, centerY + y * px - 55, px, px);
   }
-  // Grass block 8x8
   const grass = [
     '..gggg..',
     '.gGGGGg.',
@@ -540,7 +549,7 @@ function drawPixelBoys(centerX, centerY) {
     'bBBBbBBb',
     '.bBBBBb.',
   ];
-  const cmap = { g: '#3a8c27', G: '#5cb338', b: '#8b6914', B: '#a07830', '.': null };
+  const cmap = { g: '#2d7a1e', G: '#5cb338', b: '#8b6914', B: '#a07830', '.': null };
   for (let row = 0; row < grass.length; row++) {
     for (let col = 0; col < grass[row].length; col++) {
       const c = cmap[grass[row][col]];
@@ -549,21 +558,21 @@ function drawPixelBoys(centerX, centerY) {
   }
 
   // Text
-  ctx.fillStyle = '#4a9a3a';
-  ctx.font = 'bold 11px Courier New';
-  ctx.fillText('MINECRAFT', centerX, centerY - 2);
+  ctx.fillStyle = '#1a5010';
+  ctx.font = 'bold 16px Courier New';
+  ctx.fillText('MINECRAFT', centerX, centerY - 10);
 
-  ctx.fillStyle = '#5abf45';
-  ctx.font = 'bold 13px Courier New';
-  ctx.fillText('PIESKISMP.ATERNOS.ME', centerX, centerY + 14);
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 18px Courier New';
+  ctx.fillText('PIESKISMP.ATERNOS.ME', centerX, centerY + 12);
 
-  ctx.fillStyle = '#3a7a2a';
-  ctx.font = '10px Courier New';
-  ctx.fillText('port 33434', centerX, centerY + 28);
+  ctx.fillStyle = '#e0e0e0';
+  ctx.font = 'bold 14px Courier New';
+  ctx.fillText('port 33434', centerX, centerY + 32);
 
-  ctx.fillStyle = '#2a5a1a';
-  ctx.font = '9px Courier New';
-  ctx.fillText('by Jasix2015', centerX, centerY + 42);
+  ctx.fillStyle = '#1a5010';
+  ctx.font = '12px Courier New';
+  ctx.fillText('by Jasix2015', centerX, centerY + 50);
 }
 
 // ============ TRACK DRAWING ============
@@ -572,7 +581,7 @@ function drawTrack() {
   ctx.translate(shakeX, shakeY);
 
   // Green infield
-  ctx.fillStyle = '#2d5a1e';
+  ctx.fillStyle = '#3a8c27';
   ctx.beginPath();
   ctx.moveTo(LEFT_CX, CY - R_INNER);
   ctx.lineTo(RIGHT_CX, CY - R_INNER);
