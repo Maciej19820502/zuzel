@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<title>Grand Prix JASIX2015 - Online</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #111;
+  color: #eee;
+  font-family: 'Courier New', monospace;
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+  user-select: none;
+}
+#game-area {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+canvas {
+  border: 2px solid #444;
+  background: #1a1a1a;
+  display: none;
+}
+#sidebar {
+  width: 280px;
+  background: #0a0a0a;
+  border-left: 2px solid #444;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+  display: none;
+}
+#sidebar h2 {
+  text-align: center;
+  font-size: 16px;
+  color: #aaa;
+  border-bottom: 1px solid #444;
+  padding-bottom: 8px;
+}
+.player-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 1px solid #333;
+  border-radius: 4px;
+}
+.player-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.player-name { flex: 1; font-size: 13px; }
+.player-info { font-size: 12px; color: #aaa; text-align: right; }
+#heat-info {
+  text-align: center;
+  font-size: 13px;
+  color: #ff6600;
+  padding: 4px 0;
+  border-bottom: 1px solid #333;
+}
+#total-scores {
+  border-top: 1px solid #444;
+  padding-top: 8px;
+}
+#total-scores h3 {
+  font-size: 13px;
+  color: #888;
+  margin-bottom: 6px;
+  text-align: center;
+}
+
+/* Lobby screen */
+#lobby-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+#lobby-screen h1 {
+  font-size: 36px;
+  color: #ff6600;
+  text-shadow: 0 0 20px #ff6600;
+  margin-bottom: 4px;
+}
+#lobby-screen h3 {
+  font-size: 14px;
+  color: #888;
+  margin-bottom: 20px;
+}
+.lobby-box {
+  background: #1a1a1a;
+  border: 1px solid #444;
+  padding: 20px 28px;
+  border-radius: 8px;
+  width: 400px;
+  text-align: center;
+}
+.lobby-box label {
+  font-size: 14px;
+  color: #aaa;
+  display: block;
+  margin-bottom: 6px;
+}
+.lobby-box input[type="text"] {
+  width: 200px;
+  background: #222;
+  border: 1px solid #555;
+  color: #eee;
+  font-family: 'Courier New', monospace;
+  font-size: 15px;
+  padding: 8px 12px;
+  outline: none;
+  text-align: center;
+  margin-bottom: 12px;
+}
+.lobby-box input[type="text"]:focus { border-color: #ff6600; }
+.lobby-box .key-section {
+  margin-bottom: 14px;
+}
+.lobby-box .key-section span {
+  font-size: 13px;
+  color: #aaa;
+}
+#key-bind-btn {
+  background: #333;
+  border: 1px solid #666;
+  color: #ff6600;
+  font-family: 'Courier New', monospace;
+  font-size: 15px;
+  padding: 6px 16px;
+  cursor: pointer;
+  min-width: 60px;
+  margin-left: 8px;
+}
+#key-bind-btn:hover { border-color: #ff6600; }
+#key-bind-btn.listening {
+  background: #ff6600;
+  color: #000;
+  animation: pulse 0.5s infinite alternate;
+}
+@keyframes pulse { from { opacity: 0.7; } to { opacity: 1; } }
+
+#btn-join {
+  font-family: 'Courier New', monospace;
+  font-size: 18px;
+  padding: 10px 36px;
+  background: #ff6600;
+  color: #000;
+  border: none;
+  cursor: pointer;
+  font-weight: bold;
+  margin-top: 8px;
+}
+#btn-join:hover { background: #ff8800; }
+#btn-join:disabled { background: #555; cursor: default; }
+
+#waiting-list {
+  margin-top: 16px;
+  font-size: 13px;
+  color: #888;
+}
+#waiting-list .wl-player {
+  color: #ccc;
+  margin: 3px 0;
+}
+#connection-status {
+  margin-top: 12px;
+  font-size: 12px;
+}
+.status-ok { color: #5c5; }
+.status-err { color: #f55; }
+
+/* Overlay for results */
+.overlay {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: rgba(0,0,0,0.88);
+  z-index: 10;
+  overflow-y: auto;
+  padding: 20px 0;
+}
+.overlay.hidden { display: none; }
+.overlay h2 {
+  font-size: 28px;
+  color: #ff6600;
+  margin-bottom: 16px;
+}
+.result-line {
+  font-size: 18px;
+  margin: 6px 0;
+  padding: 4px 16px;
+}
+.final-scores {
+  margin-top: 16px;
+  border-top: 1px solid #444;
+  padding-top: 12px;
+}
+.final-scores h3 {
+  font-size: 18px;
+  color: #aaa;
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+#countdown {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 80px;
+  color: #ff6600;
+  text-shadow: 0 0 30px #ff6600;
+  z-index: 5;
+  display: none;
+}
+
+/* Abort button */
+#btn-abort {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 15;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  padding: 6px 14px;
+  background: #600;
+  color: #faa;
+  border: 1px solid #a33;
+  cursor: pointer;
+  display: none;
+}
+#btn-abort:hover { background: #800; }
+
+/* Minecraft ad */
+.mc-ad {
+  margin-top: 14px;
+  padding: 10px 16px;
+  background: #2a6e1a;
+  border: 1px solid #4a4;
+  border-radius: 6px;
+  text-align: center;
+}
+.mc-ad .mc-label { font-size: 11px; color: #8c8; }
+.mc-ad .mc-ip { font-size: 16px; color: #fff; font-weight: bold; margin: 4px 0; }
+.mc-ad .mc-port { font-size: 12px; color: #cdc; }
+</style>
+</head>
+<body>
+
+<div id="game-area">
+  <!-- LOBBY -->
+  <div id="lobby-screen">
+    <h1>GRAND PRIX JASIX2015</h1>
+    <h3>/ Kreski - Online /</h3>
+    <div class="lobby-box">
+      <label>Twoje imię</label>
+      <input type="text" id="input-name" value="" maxlength="12" placeholder="Wpisz imię...">
+      <div class="key-section">
+        <span>Klawisz skrętu:</span>
+        <button id="key-bind-btn">SPACE</button>
+      </div>
+      <button id="btn-join">DOŁĄCZ</button>
+      <div id="connection-status"></div>
+      <div id="waiting-list"></div>
+    </div>
+    <div class="mc-ad">
+      <div class="mc-label">MINECRAFT SERVER</div>
+      <div class="mc-ip">PIESKISMP.ATERNOS.ME</div>
+      <div class="mc-port">port 33434 &bull; by Jasix2015</div>
+    </div>
+  </div>
+
+  <!-- GAME -->
+  <canvas id="track" width="800" height="600"></canvas>
+  <div id="countdown"></div>
+  <button id="btn-abort">ZAKONCZ MECZ</button>
+
+  <!-- RESULTS OVERLAY -->
+  <div id="results-screen" class="overlay hidden">
+    <h2 id="results-title">WYNIKI BIEGU</h2>
+    <div id="results-list"></div>
+    <div id="final-total" class="final-scores" style="display:none">
+      <h3>Klasyfikacja generalna</h3>
+      <div id="final-total-list"></div>
+    </div>
+    <div id="results-info" style="font-size:13px;color:#888;margin-top:12px;"></div>
+  </div>
+</div>
+
+<div id="sidebar">
+  <h2>GRAND PRIX JASIX2015</h2>
+  <div id="heat-info"></div>
+  <div id="scoreboard"></div>
+  <div id="total-scores">
+    <h3>Punktacja</h3>
+    <div id="total-scores-list"></div>
+  </div>
+  <div style="margin-top:auto;padding:8px;background:#2a6e1a;border:1px solid #4a4;border-radius:4px;text-align:center;">
+    <div style="font-size:9px;color:#8c8">MINECRAFT SERVER</div>
+    <div style="font-size:11px;color:#fff;font-weight:bold;margin:2px 0">PIESKISMP.ATERNOS.ME</div>
+    <div style="font-size:9px;color:#cdc">port 33434 &bull; by Jasix2015</div>
+  </div>
+</div>
+
+<script>
+// ============ CLIENT STATE ============
+let ws = null;
+let mySlot = -1;
+let myKey = ' '; // default space
+let myName = '';
+let gameState = null; // last received state
+let screen = 'lobby'; // lobby | game | results
+let listeningForKey = false;
+let audioCtx = null;
+let shakeX = 0, shakeY = 0;
+let localShakeTimer = 0;
+let prevAliveCounts = null;
+let prevLaps = null;
+
+// Track constants (must match server)
+const R_INNER = 100, R_OUTER = 180, STRAIGHT_LEN = 300;
+const CX = 400, CY = 300;
+const LEFT_CX = CX - STRAIGHT_LEN / 2;
+const RIGHT_CX = CX + STRAIGHT_LEN / 2;
+const COLORS = ['#ff3333', '#3388ff', '#ffdd00', '#ffffff'];
+
+const canvas = document.getElementById('track');
+const ctx = canvas.getContext('2d');
+
+// ============ AUDIO ============
+function initAudio() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+}
+
+function beep(freq, duration) {
+  if (!audioCtx) return;
+  try {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'square';
+    osc.frequency.value = freq;
+    gain.gain.value = 0.08;
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+    osc.stop(audioCtx.currentTime + duration);
+  } catch(e) {}
+}
+
+// ============ ENGINE SOUNDS ============
+// 4 engines with slightly different base frequencies + LFO for rumble
+const ENGINE_FREQS = [82, 87, 78, 92]; // different low freqs per player
+const ENGINE_LFO_RATES = [12, 14, 11, 13]; // LFO modulation speed
+let engineNodes = [null, null, null, null]; // { osc, lfo, gain }
+
+function startEngines() {
+  if (!audioCtx) return;
+  for (let i = 0; i < 4; i++) {
+    if (engineNodes[i]) continue;
+    try {
+      const gain = audioCtx.createGain();
+      gain.gain.value = 0.012;
+      gain.connect(audioCtx.destination);
+
+      // Main oscillator - sawtooth for engine-like tone
+      const osc = audioCtx.createOscillator();
+      osc.type = 'sawtooth';
+      osc.frequency.value = ENGINE_FREQS[i];
+
+      // LFO to modulate frequency for rumble/pulsation
+      const lfo = audioCtx.createOscillator();
+      const lfoGain = audioCtx.createGain();
+      lfo.frequency.value = ENGINE_LFO_RATES[i];
+      lfoGain.gain.value = 8; // frequency wobble amount
+      lfo.connect(lfoGain);
+      lfoGain.connect(osc.frequency);
+
+      osc.connect(gain);
+      osc.start();
+      lfo.start();
+
+      engineNodes[i] = { osc, lfo, lfoGain, gain };
+    } catch(e) {}
+  }
+}
+
+function stopEngine(index) {
+  const e = engineNodes[index];
+  if (!e) return;
+  try {
+    e.gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.3);
+    setTimeout(() => {
+      try { e.osc.stop(); e.lfo.stop(); } catch(ex) {}
+    }, 400);
+  } catch(ex) {}
+  engineNodes[index] = null;
+}
+
+function stopAllEngines() {
+  for (let i = 0; i < 4; i++) stopEngine(i);
+}
+
+// ============ KEY BINDING ============
+const keyBindBtn = document.getElementById('key-bind-btn');
+keyBindBtn.addEventListener('click', () => {
+  listeningForKey = true;
+  keyBindBtn.classList.add('listening');
+  keyBindBtn.textContent = '...';
+});
+
+document.addEventListener('keydown', (e) => {
+  if (listeningForKey) {
+    e.preventDefault();
+    listeningForKey = false;
+    myKey = e.key === ' ' ? ' ' : e.key.toLowerCase();
+    keyBindBtn.textContent = e.key === ' ' ? 'SPACE' : (e.key.length === 1 ? e.key.toUpperCase() : e.key);
+    keyBindBtn.classList.remove('listening');
+    return;
+  }
+
+  if (screen === 'game' && ws && mySlot >= 0) {
+    const k = e.key === ' ' ? ' ' : e.key.toLowerCase();
+    if (k === myKey) {
+      ws.send(JSON.stringify({ type: 'keydown' }));
+    }
+  }
+});
+
+document.addEventListener('keyup', (e) => {
+  if (screen === 'game' && ws && mySlot >= 0) {
+    const k = e.key === ' ' ? ' ' : e.key.toLowerCase();
+    if (k === myKey) {
+      ws.send(JSON.stringify({ type: 'keyup' }));
+    }
+  }
+});
+
+// ============ WEBSOCKET ============
+function connect() {
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  ws = new WebSocket(`${proto}://${location.host}`);
+
+  ws.onopen = () => {
+    document.getElementById('connection-status').innerHTML = '<span class="status-ok">Polaczono z serwerem</span>';
+    document.getElementById('btn-join').disabled = false;
+  };
+
+  ws.onclose = () => {
+    document.getElementById('connection-status').innerHTML = '<span class="status-err">Rozlaczono - odswierz strone</span>';
+    document.getElementById('btn-join').disabled = true;
+    // If in game, go back to lobby
+    if (screen !== 'lobby') {
+      showLobby();
+    }
+  };
+
+  ws.onmessage = (e) => {
+    const msg = JSON.parse(e.data);
+    handleMessage(msg);
+  };
+}
+
+function handleMessage(msg) {
+  switch (msg.type) {
+    case 'lobby':
+      updateLobbyList(msg);
+      break;
+
+    case 'assigned':
+      mySlot = msg.slot;
+      showGame();
+      break;
+
+    case 'countdown':
+      handleCountdown(msg.value);
+      break;
+
+    case 'state':
+      handleState(msg);
+      break;
+
+    case 'heat_end':
+      handleHeatEnd(msg);
+      break;
+
+    case 'match_end':
+      handleMatchEnd(msg);
+      break;
+  }
+}
+
+// ============ LOBBY ============
+function updateLobbyList(msg) {
+  const wl = document.getElementById('waiting-list');
+  if (msg.players.length === 0) {
+    wl.innerHTML = '<div style="color:#666">Nikt nie czeka...</div>';
+  } else {
+    let html = '<div style="color:#aaa;margin-bottom:4px">Czekaja na mecz:</div>';
+    for (const p of msg.players) {
+      const isMe = p.index === msg.you;
+      html += `<div class="wl-player" style="${isMe ? 'color:#ff6600;font-weight:bold' : ''}">${p.name}${isMe ? ' (ty)' : ''}</div>`;
+    }
+    html += '<div style="color:#555;font-size:11px;margin-top:6px">Mecz startuje automatycznie gdy 2+ graczy</div>';
+    wl.innerHTML = html;
+  }
+}
+
+document.getElementById('btn-join').addEventListener('click', () => {
+  initAudio();
+  myName = document.getElementById('input-name').value.trim() || 'Anonim';
+  if (ws && ws.readyState === 1) {
+    ws.send(JSON.stringify({ type: 'join', name: myName }));
+  }
+});
+
+// Allow Enter to join
+document.getElementById('input-name').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    document.getElementById('btn-join').click();
+  }
+});
+
+// ============ SCREEN SWITCHING ============
+function showLobby() {
+  screen = 'lobby';
+  mySlot = -1;
+  gameState = null;
+  prevAliveCounts = null;
+  prevLaps = null;
+  stopAllEngines();
+  document.getElementById('lobby-screen').style.display = 'flex';
+  canvas.style.display = 'none';
+  document.getElementById('sidebar').style.display = 'none';
+  document.getElementById('results-screen').classList.add('hidden');
+  document.getElementById('countdown').style.display = 'none';
+  document.getElementById('btn-abort').style.display = 'none';
+}
+
+function showGame() {
+  screen = 'game';
+  prevAliveCounts = null;
+  prevLaps = null;
+  document.getElementById('lobby-screen').style.display = 'none';
+  canvas.style.display = 'block';
+  document.getElementById('sidebar').style.display = 'flex';
+  document.getElementById('results-screen').classList.add('hidden');
+  document.getElementById('btn-abort').style.display = 'block';
+}
+
+// ============ ABORT BUTTON ============
+document.getElementById('btn-abort').addEventListener('click', () => {
+  if (ws && ws.readyState === 1) {
+    if (confirm('Na pewno zakonczyc mecz?')) {
+      ws.send(JSON.stringify({ type: 'abort' }));
+    }
+  }
+});
+
+// ============ COUNTDOWN ============
+function handleCountdown(value) {
+  const cdEl = document.getElementById('countdown');
+  document.getElementById('results-screen').classList.add('hidden');
+  if (value > 0) {
+    cdEl.style.display = 'block';
+    cdEl.textContent = value;
+    beep(440, 0.15);
+  } else if (value === 0) {
+    cdEl.textContent = 'START!';
+    beep(880, 0.3);
+    startEngines();
+    setTimeout(() => { cdEl.style.display = 'none'; }, 700);
+  }
+}
+
+// ============ GAME STATE ============
+function handleState(msg) {
+  // Detect sounds from state changes
+  if (prevAliveCounts !== null) {
+    for (let i = 0; i < msg.players.length; i++) {
+      if (prevAliveCounts[i] && !msg.players[i].alive) {
+        localShakeTimer = 10;
+        beep(200, 0.3);
+        stopEngine(i);
+      }
+      if (prevLaps && prevLaps[i] < msg.players[i].laps) {
+        beep(880, 0.1);
+        if (msg.players[i].finished) {
+          beep(1200, 0.2);
+          stopEngine(i);
+        }
+      }
+    }
+  }
+  prevAliveCounts = msg.players.map(p => p.alive);
+  prevLaps = msg.players.map(p => p.laps);
+
+  gameState = msg;
+  updateSidebar(msg);
+}
+
+function updateSidebar(msg) {
+  document.getElementById('heat-info').textContent =
+    `Bieg ${msg.heat} / ${msg.totalHeats} \u2022 ${msg.totalLaps} okr.`;
+
+  const sb = document.getElementById('scoreboard');
+  let html = '';
+  for (const p of msg.players) {
+    const status = p.finished ? 'META!' : p.alive ? `Okr. ${p.laps}/${msg.totalLaps}` : 'Odpada';
+    const cpuTag = p.isCPU ? ' <span style="color:#666;font-size:10px">[CPU]</span>' : '';
+    html += `<div class="player-row">
+      <div class="player-dot" style="background:${p.alive || p.finished ? p.color : '#555'}"></div>
+      <div class="player-name">${p.name}${cpuTag}</div>
+      <div class="player-info">${status}</div>
+    </div>`;
+  }
+  sb.innerHTML = html;
+}
+
+// ============ HEAT END ============
+function handleHeatEnd(msg) {
+  stopAllEngines();
+  const isLast = msg.isLast;
+  document.getElementById('results-title').textContent =
+    isLast ? 'WYNIKI KONCOWE' : `WYNIKI BIEGU ${msg.heat}`;
+
+  const rl = document.getElementById('results-list');
+  let html = '';
+  for (let i = 0; i < msg.order.length; i++) {
+    const p = msg.order[i];
+    const statusText = p.finished ? 'META' : p.alive ? `Okr. ${p.laps}` : 'Odpada';
+    html += `<div class="result-line" style="color:${p.color}">${i + 1}. ${p.name} \u2014 ${p.heatPoints} pkt (${statusText})</div>`;
+  }
+  rl.innerHTML = html;
+
+  const ft = document.getElementById('final-total');
+  const ftl = document.getElementById('final-total-list');
+  ft.style.display = 'block';
+  ftl.innerHTML = '';
+
+  const sorted = msg.slots.map((s, i) => ({ name: s.name, color: COLORS[i], pts: msg.totalPoints[i] }))
+    .sort((a, b) => b.pts - a.pts);
+  let ftHtml = '';
+  for (let i = 0; i < sorted.length; i++) {
+    const s = sorted[i];
+    ftHtml += `<div class="result-line" style="color:${s.color};font-size:${isLast ? '20px' : '15px'}">${i + 1}. ${s.name} \u2014 ${s.pts} pkt</div>`;
+  }
+  ftl.innerHTML = ftHtml;
+
+  // Update total scores in sidebar
+  const tsl = document.getElementById('total-scores-list');
+  let tslHtml = '';
+  for (const s of sorted) {
+    tslHtml += `<div class="player-row">
+      <div class="player-dot" style="background:${s.color}"></div>
+      <div class="player-name">${s.name}</div>
+      <div class="player-info">${s.pts} pkt</div>
+    </div>`;
+  }
+  tsl.innerHTML = tslHtml;
+
+  document.getElementById('results-info').textContent =
+    isLast ? 'Wracasz do lobby...' : 'Nastepny bieg za chwile...';
+
+  document.getElementById('results-screen').classList.remove('hidden');
+
+  beep(600, 0.15);
+  setTimeout(() => beep(800, 0.15), 200);
+  setTimeout(() => beep(1000, 0.3), 400);
+}
+
+// ============ MATCH END ============
+function handleMatchEnd(msg) {
+  // Show final standings briefly, then return to lobby
+  if (screen === 'game') {
+    setTimeout(() => {
+      showLobby();
+      // Re-join lobby automatically
+      if (ws && ws.readyState === 1 && myName) {
+        ws.send(JSON.stringify({ type: 'join', name: myName }));
+      }
+    }, msg.aborted ? 1000 : 5000);
+  }
+}
+
+// ============ DRAWING ============
+function drawPixelBoys(centerX, centerY) {
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  const px = 4;
+  function dot(x, y, c) {
+    ctx.fillStyle = c;
+    ctx.fillRect(centerX + x * px - 16, centerY + y * px - 55, px, px);
+  }
+  const grass = [
+    '..gggg..',
+    '.gGGGGg.',
+    'gGGGGGGg',
+    'bBBBBBBb',
+    'bBbBBbBb',
+    'bBBbBBBb',
+    'bBBBbBBb',
+    '.bBBBBb.',
+  ];
+  const cmap = { g: '#2d7a1e', G: '#5cb338', b: '#8b6914', B: '#a07830', '.': null };
+  for (let row = 0; row < grass.length; row++) {
+    for (let col = 0; col < grass[row].length; col++) {
+      const c = cmap[grass[row][col]];
+      if (c) dot(col - 4, row, c);
+    }
+  }
+
+  ctx.fillStyle = '#1a5010';
+  ctx.font = 'bold 16px Courier New';
+  ctx.fillText('MINECRAFT', centerX, centerY - 10);
+
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 18px Courier New';
+  ctx.fillText('PIESKISMP.ATERNOS.ME', centerX, centerY + 12);
+
+  ctx.fillStyle = '#e0e0e0';
+  ctx.font = 'bold 14px Courier New';
+  ctx.fillText('port 33434', centerX, centerY + 32);
+
+  ctx.fillStyle = '#1a5010';
+  ctx.font = '12px Courier New';
+  ctx.fillText('by Jasix2015', centerX, centerY + 50);
+}
+
+function drawTrack() {
+  ctx.save();
+  ctx.translate(shakeX, shakeY);
+
+  // Green infield
+  ctx.fillStyle = '#3a8c27';
+  ctx.beginPath();
+  ctx.moveTo(LEFT_CX, CY - R_INNER);
+  ctx.lineTo(RIGHT_CX, CY - R_INNER);
+  ctx.arc(RIGHT_CX, CY, R_INNER, -Math.PI / 2, Math.PI / 2);
+  ctx.lineTo(LEFT_CX, CY + R_INNER);
+  ctx.arc(LEFT_CX, CY, R_INNER, Math.PI / 2, -Math.PI / 2);
+  ctx.closePath();
+  ctx.fill();
+
+  // Track surface
+  ctx.fillStyle = '#888';
+  ctx.beginPath();
+  ctx.moveTo(LEFT_CX, CY - R_OUTER);
+  ctx.lineTo(RIGHT_CX, CY - R_OUTER);
+  ctx.arc(RIGHT_CX, CY, R_OUTER, -Math.PI / 2, Math.PI / 2);
+  ctx.lineTo(LEFT_CX, CY + R_OUTER);
+  ctx.arc(LEFT_CX, CY, R_OUTER, Math.PI / 2, -Math.PI / 2);
+  ctx.closePath();
+  ctx.moveTo(LEFT_CX, CY - R_INNER);
+  ctx.arc(LEFT_CX, CY, R_INNER, -Math.PI / 2, Math.PI / 2);
+  ctx.lineTo(RIGHT_CX, CY + R_INNER);
+  ctx.arc(RIGHT_CX, CY, R_INNER, Math.PI / 2, -Math.PI / 2);
+  ctx.closePath();
+  ctx.fill();
+
+  // Borders
+  ctx.strokeStyle = '#222';
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.moveTo(LEFT_CX, CY - R_OUTER);
+  ctx.lineTo(RIGHT_CX, CY - R_OUTER);
+  ctx.arc(RIGHT_CX, CY, R_OUTER, -Math.PI / 2, Math.PI / 2);
+  ctx.lineTo(LEFT_CX, CY + R_OUTER);
+  ctx.arc(LEFT_CX, CY, R_OUTER, Math.PI / 2, -Math.PI / 2);
+  ctx.closePath();
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(LEFT_CX, CY - R_INNER);
+  ctx.lineTo(RIGHT_CX, CY - R_INNER);
+  ctx.arc(RIGHT_CX, CY, R_INNER, -Math.PI / 2, Math.PI / 2);
+  ctx.lineTo(LEFT_CX, CY + R_INNER);
+  ctx.arc(LEFT_CX, CY, R_INNER, Math.PI / 2, -Math.PI / 2);
+  ctx.closePath();
+  ctx.stroke();
+
+  // Finish line
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 3;
+  ctx.setLineDash([6, 6]);
+  ctx.beginPath();
+  ctx.moveTo(CX, CY + R_INNER);
+  ctx.lineTo(CX, CY + R_OUTER);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Midpoint marker
+  ctx.strokeStyle = '#555';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4, 4]);
+  ctx.beginPath();
+  ctx.moveTo(CX, CY - R_INNER);
+  ctx.lineTo(CX, CY - R_OUTER);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  drawPixelBoys(CX, CY);
+
+  ctx.restore();
+}
+
+function colorWithAlpha(hex, alpha) {
+  let r, g, b;
+  if (hex.length === 4) {
+    r = parseInt(hex[1] + hex[1], 16);
+    g = parseInt(hex[2] + hex[2], 16);
+    b = parseInt(hex[3] + hex[3], 16);
+  } else {
+    r = parseInt(hex.slice(1, 3), 16);
+    g = parseInt(hex.slice(3, 5), 16);
+    b = parseInt(hex.slice(5, 7), 16);
+  }
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+function draw() {
+  if (screen !== 'game' || !gameState) return;
+
+  // Local shake
+  if (localShakeTimer > 0) {
+    localShakeTimer--;
+    shakeX = (Math.random() - 0.5) * localShakeTimer * 0.8;
+    shakeY = (Math.random() - 0.5) * localShakeTimer * 0.8;
+  } else {
+    shakeX = 0; shakeY = 0;
+  }
+  // Also use server shake
+  if (gameState.shakeTimer > 0) {
+    localShakeTimer = Math.max(localShakeTimer, gameState.shakeTimer);
+  }
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawTrack();
+
+  ctx.save();
+  ctx.translate(shakeX, shakeY);
+
+  for (const p of gameState.players) {
+    const len = p.trail.length;
+    if (len < 2) continue;
+
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    for (let i = 0; i < len - 1; i++) {
+      const alpha = p.alive || p.finished
+        ? 1.0 - (i / len) * 0.9
+        : 0.3 - (i / len) * 0.25;
+      const baseColor = p.alive || p.finished ? p.color : '#555';
+      ctx.strokeStyle = colorWithAlpha(baseColor, Math.max(0.05, alpha));
+      ctx.lineWidth = 3 - (i / len) * 1.5;
+      ctx.beginPath();
+      ctx.moveTo(p.trail[i].x, p.trail[i].y);
+      ctx.lineTo(p.trail[i + 1].x, p.trail[i + 1].y);
+      ctx.stroke();
+    }
+
+    if (p.alive && !p.finished) {
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowColor = p.color;
+      ctx.shadowBlur = 8;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      if (!p.isCPU) {
+        ctx.font = 'bold 11px Courier New';
+        ctx.fillStyle = p.color;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(p.name.substring(0, 6), p.x, p.y - 12);
+      }
+    }
+  }
+
+  // HUD
+  ctx.font = '12px Courier New';
+  ctx.textAlign = 'left';
+  let infoY = 20;
+  for (const p of gameState.players) {
+    ctx.fillStyle = p.alive ? p.color : '#555';
+    const cpuTag = p.isCPU ? ' [CPU]' : '';
+    const status = p.finished ? 'META!' : p.alive ? `Okr: ${p.laps}/${gameState.totalLaps}` : 'ODPADA';
+    ctx.fillText(`${p.name}${cpuTag}: ${status}`, 10, infoY);
+    infoY += 16;
+  }
+
+  ctx.restore();
+}
+
+// ============ GAME LOOP ============
+function gameLoop() {
+  draw();
+  requestAnimationFrame(gameLoop);
+}
+
+// ============ INIT ============
+connect();
+gameLoop();
+</script>
+</body>
+</html>
