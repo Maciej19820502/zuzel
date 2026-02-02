@@ -1,0 +1,1152 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<title>Grand Prix JASIX2015</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #111;
+  color: #eee;
+  font-family: 'Courier New', monospace;
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+  user-select: none;
+}
+#game-area {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+canvas {
+  border: 2px solid #444;
+  background: #1a1a1a;
+}
+#sidebar {
+  width: 280px;
+  background: #0a0a0a;
+  border-left: 2px solid #444;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+}
+#sidebar h2 {
+  text-align: center;
+  font-size: 16px;
+  color: #aaa;
+  border-bottom: 1px solid #444;
+  padding-bottom: 8px;
+}
+.player-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 1px solid #333;
+  border-radius: 4px;
+}
+.player-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.player-name { flex: 1; font-size: 13px; }
+.player-info { font-size: 12px; color: #aaa; text-align: right; }
+#controls {
+  margin-top: auto;
+  font-size: 11px;
+  color: #666;
+  line-height: 1.6;
+  border-top: 1px solid #333;
+  padding-top: 12px;
+}
+#controls span { color: #aaa; }
+#heat-info {
+  text-align: center;
+  font-size: 13px;
+  color: #ff6600;
+  padding: 4px 0;
+  border-bottom: 1px solid #333;
+}
+#total-scores {
+  border-top: 1px solid #444;
+  padding-top: 8px;
+}
+#total-scores h3 {
+  font-size: 13px;
+  color: #888;
+  margin-bottom: 6px;
+  text-align: center;
+}
+
+/* Overlay screens */
+.overlay {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: rgba(0,0,0,0.88);
+  z-index: 10;
+  overflow-y: auto;
+  padding: 20px 0;
+}
+.overlay.hidden { display: none; }
+.overlay h1 {
+  font-size: 36px;
+  color: #ff6600;
+  text-shadow: 0 0 20px #ff6600;
+  margin-bottom: 4px;
+}
+.overlay h3 {
+  font-size: 14px;
+  color: #888;
+  margin-bottom: 16px;
+}
+.overlay button {
+  font-family: 'Courier New', monospace;
+  font-size: 18px;
+  padding: 10px 36px;
+  background: #ff6600;
+  color: #000;
+  border: none;
+  cursor: pointer;
+  font-weight: bold;
+  margin-top: 12px;
+}
+.overlay button:hover { background: #ff8800; }
+
+/* Setup screen */
+#setup-screen .setup-box {
+  background: #1a1a1a;
+  border: 1px solid #444;
+  padding: 20px 24px;
+  border-radius: 8px;
+  width: 620px;
+}
+.setup-player {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0;
+  padding: 6px 0;
+  border-bottom: 1px solid #222;
+}
+.setup-player .color-dot {
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.setup-player input[type="text"] {
+  width: 120px;
+  background: #222;
+  border: 1px solid #555;
+  color: #eee;
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  padding: 5px 8px;
+  outline: none;
+}
+.setup-player input[type="text"]:focus { border-color: #ff6600; }
+.key-bind-btn {
+  background: #333;
+  border: 1px solid #666;
+  color: #ff6600;
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  padding: 5px 10px;
+  cursor: pointer;
+  min-width: 50px;
+  text-align: center;
+}
+.key-bind-btn:hover { border-color: #ff6600; }
+.key-bind-btn.listening {
+  background: #ff6600;
+  color: #000;
+  animation: pulse 0.5s infinite alternate;
+}
+@keyframes pulse { from { opacity: 0.7; } to { opacity: 1; } }
+
+.cpu-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #aaa;
+}
+.cpu-toggle input[type="checkbox"] {
+  accent-color: #ff6600;
+  cursor: pointer;
+}
+.cpu-level {
+  background: #222;
+  border: 1px solid #555;
+  color: #eee;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  padding: 3px 4px;
+  outline: none;
+  width: 100px;
+}
+.cpu-level:focus { border-color: #ff6600; }
+.cpu-level:disabled { opacity: 0.3; }
+
+.param-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 10px 0;
+  justify-content: center;
+}
+.param-row label {
+  font-size: 14px;
+  color: #aaa;
+}
+.param-row input[type="number"] {
+  background: #222;
+  border: 1px solid #555;
+  color: #eee;
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  padding: 4px 8px;
+  width: 60px;
+  outline: none;
+}
+.param-row input[type="number"]:focus { border-color: #ff6600; }
+.section-label {
+  font-size: 14px;
+  color: #ff6600;
+  margin: 14px 0 6px 0;
+  text-align: center;
+}
+.setup-header-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+  padding: 0 0 4px 0;
+  font-size: 11px;
+  color: #666;
+}
+.setup-header-row .h-color { width: 16px; }
+.setup-header-row .h-name { width: 120px; }
+.setup-header-row .h-key { width: 50px; text-align: center; }
+.setup-header-row .h-cpu { width: 30px; text-align: center; }
+.setup-header-row .h-level { width: 100px; }
+
+/* Results */
+#results-screen .result-line {
+  font-size: 18px;
+  margin: 6px 0;
+  padding: 4px 16px;
+}
+#results-screen h2 {
+  font-size: 28px;
+  color: #ff6600;
+  margin-bottom: 16px;
+}
+#results-screen .final-scores {
+  margin-top: 16px;
+  border-top: 1px solid #444;
+  padding-top: 12px;
+}
+#results-screen .final-scores h3 {
+  font-size: 18px;
+  color: #aaa;
+  margin-bottom: 8px;
+}
+
+#countdown {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 80px;
+  color: #ff6600;
+  text-shadow: 0 0 30px #ff6600;
+  z-index: 5;
+  display: none;
+}
+</style>
+</head>
+<body>
+
+<div id="game-area">
+  <canvas id="track" width="800" height="600"></canvas>
+  <div id="countdown"></div>
+
+  <!-- SETUP SCREEN -->
+  <div id="setup-screen" class="overlay">
+    <h1>GRAND PRIX JASIX2015</h1>
+    <h3>/ Kreski /</h3>
+    <div class="setup-box">
+      <div class="section-label">Zawodnicy</div>
+      <div class="setup-header-row">
+        <span class="h-color"></span>
+        <span class="h-name">Imię</span>
+        <span class="h-key">Klawisz</span>
+        <span class="h-cpu">CPU</span>
+        <span class="h-level">Poziom</span>
+      </div>
+      <div class="setup-player" id="sp0">
+        <div class="color-dot" style="background:#ff3333"></div>
+        <input type="text" id="name0" value="Czerwony" maxlength="12">
+        <button class="key-bind-btn" id="key0" data-idx="0">Q</button>
+        <div class="cpu-toggle">
+          <input type="checkbox" id="cpu0" data-idx="0">
+          <label for="cpu0">CPU</label>
+        </div>
+        <select class="cpu-level" id="lvl0" disabled>
+          <option value="1">1-Leszcz</option>
+          <option value="2">2-Kotek</option>
+          <option value="3" selected>3-Piesek</option>
+          <option value="4">4-Kocur</option>
+          <option value="5">5-Jaguar</option>
+        </select>
+      </div>
+      <div class="setup-player" id="sp1">
+        <div class="color-dot" style="background:#3388ff"></div>
+        <input type="text" id="name1" value="Niebieski" maxlength="12">
+        <button class="key-bind-btn" id="key1" data-idx="1">X</button>
+        <div class="cpu-toggle">
+          <input type="checkbox" id="cpu1" data-idx="1">
+          <label for="cpu1">CPU</label>
+        </div>
+        <select class="cpu-level" id="lvl1" disabled>
+          <option value="1">1-Leszcz</option>
+          <option value="2">2-Kotek</option>
+          <option value="3" selected>3-Piesek</option>
+          <option value="4">4-Kocur</option>
+          <option value="5">5-Jaguar</option>
+        </select>
+      </div>
+      <div class="setup-player" id="sp2">
+        <div class="color-dot" style="background:#ffdd00"></div>
+        <input type="text" id="name2" value="Żółty" maxlength="12">
+        <button class="key-bind-btn" id="key2" data-idx="2">P</button>
+        <div class="cpu-toggle">
+          <input type="checkbox" id="cpu2" data-idx="2">
+          <label for="cpu2">CPU</label>
+        </div>
+        <select class="cpu-level" id="lvl2" disabled>
+          <option value="1">1-Leszcz</option>
+          <option value="2">2-Kotek</option>
+          <option value="3" selected>3-Piesek</option>
+          <option value="4">4-Kocur</option>
+          <option value="5">5-Jaguar</option>
+        </select>
+      </div>
+      <div class="setup-player" id="sp3">
+        <div class="color-dot" style="background:#ffffff"></div>
+        <input type="text" id="name3" value="Biały" maxlength="12">
+        <button class="key-bind-btn" id="key3" data-idx="3">M</button>
+        <div class="cpu-toggle">
+          <input type="checkbox" id="cpu3" data-idx="3">
+          <label for="cpu3">CPU</label>
+        </div>
+        <select class="cpu-level" id="lvl3" disabled>
+          <option value="1">1-Leszcz</option>
+          <option value="2">2-Kotek</option>
+          <option value="3" selected>3-Piesek</option>
+          <option value="4">4-Kocur</option>
+          <option value="5">5-Jaguar</option>
+        </select>
+      </div>
+      <div class="section-label">Ustawienia</div>
+      <div class="param-row">
+        <label>Okrążenia:</label>
+        <input type="number" id="param-laps" value="4" min="1" max="20">
+        <label style="margin-left:16px">Biegi:</label>
+        <input type="number" id="param-heats" value="4" min="1" max="20">
+      </div>
+    </div>
+    <button id="btn-start">START</button>
+  </div>
+
+  <!-- HEAT RESULTS -->
+  <div id="results-screen" class="overlay hidden">
+    <h2 id="results-title">WYNIKI BIEGU</h2>
+    <div id="results-list"></div>
+    <div id="final-total" class="final-scores" style="display:none">
+      <h3>Klasyfikacja generalna</h3>
+      <div id="final-total-list"></div>
+    </div>
+    <button id="btn-next">NASTĘPNY BIEG</button>
+  </div>
+</div>
+
+<div id="sidebar">
+  <h2>GRAND PRIX JASIX2015</h2>
+  <div id="heat-info"></div>
+  <div id="scoreboard"></div>
+  <div id="total-scores">
+    <h3>Punktacja</h3>
+    <div id="total-scores-list"></div>
+  </div>
+  <div id="controls"></div>
+</div>
+
+<script>
+// ============ CONFIG ============
+const V = 2.5;
+const V_TURN = 2.2; // slight speed reduction while turning
+const OMEGA = 0.025;
+const TRAIL_LEN = 45;
+
+const R_INNER = 100;
+const R_OUTER = 180;
+const STRAIGHT_LEN = 300;
+const CX = 400;
+const CY = 300;
+const LEFT_CX = CX - STRAIGHT_LEN / 2;
+const RIGHT_CX = CX + STRAIGHT_LEN / 2;
+
+const COLORS = ['#ff3333', '#3388ff', '#ffdd00', '#ffffff'];
+const LEVEL_NAMES = ['', 'Leszcz', 'Kotek', 'Piesek', 'Kocur', 'Jaguar'];
+
+// ============ GLOBALS ============
+const canvas = document.getElementById('track');
+const ctx = canvas.getContext('2d');
+
+let playerCfg = [
+  { name: 'Czerwony', key: 'q', isCPU: false, cpuLevel: 3 },
+  { name: 'Niebieski', key: 'x', isCPU: false, cpuLevel: 3 },
+  { name: 'Żółty', key: 'p', isCPU: false, cpuLevel: 3 },
+  { name: 'Biały', key: 'm', isCPU: false, cpuLevel: 3 },
+];
+
+let totalLaps = 4;
+let totalHeats = 4;
+let currentHeat = 0;
+let totalPoints = [0, 0, 0, 0];
+
+let players = [];
+let gameState = 'SETUP';
+let keysDown = {};
+let shakeTimer = 0;
+let shakeX = 0, shakeY = 0;
+let audioCtx = null;
+let finishOrder = [];
+
+// Key binding state
+let listeningForKey = -1; // which player index is listening, -1 = none
+
+// ============ AUDIO ============
+function initAudio() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+}
+
+function beep(freq, duration) {
+  if (!audioCtx) return;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = 'square';
+  osc.frequency.value = freq;
+  gain.gain.value = 0.08;
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start();
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+  osc.stop(audioCtx.currentTime + duration);
+}
+
+// ============ KEY BINDING SETUP ============
+function setupKeyBindingUI() {
+  for (let i = 0; i < 4; i++) {
+    const btn = document.getElementById('key' + i);
+    btn.addEventListener('click', () => {
+      // Cancel any other listening
+      if (listeningForKey >= 0) {
+        document.getElementById('key' + listeningForKey).classList.remove('listening');
+      }
+      listeningForKey = i;
+      btn.classList.add('listening');
+      btn.textContent = '...';
+    });
+
+    const cpuCb = document.getElementById('cpu' + i);
+    const lvlSel = document.getElementById('lvl' + i);
+    cpuCb.addEventListener('change', () => {
+      lvlSel.disabled = !cpuCb.checked;
+    });
+  }
+}
+
+function handleKeyBindCapture(e) {
+  if (listeningForKey < 0) return;
+  e.preventDefault();
+  e.stopPropagation();
+  const key = e.key;
+  const display = key.length === 1 ? key.toUpperCase() : key;
+  const btn = document.getElementById('key' + listeningForKey);
+  btn.textContent = display;
+  btn.classList.remove('listening');
+  playerCfg[listeningForKey].key = key.toLowerCase();
+  listeningForKey = -1;
+}
+
+// ============ PLAYER ============
+function createPlayer(index) {
+  const cfg = playerCfg[index];
+  const startX = CX - 40 + index * 25;
+  const laneY = CY + R_INNER + 15 + index * ((R_OUTER - R_INNER - 10) / 4);
+  return {
+    name: cfg.name,
+    color: COLORS[index],
+    key: cfg.key,
+    isCPU: cfg.isCPU,
+    cpuLevel: cfg.cpuLevel,
+    index: index,
+    x: startX,
+    y: laneY,
+    theta: 0, // facing right → CCW goes right, up, left, down
+    trail: [],
+    alive: true,
+    laps: 0,
+    crossedMidpoint: false,
+    finished: false,
+    heatPoints: 0,
+    // CPU internals
+    cpuTurnFrames: 0,
+    cpuNoiseOffset: (Math.random() - 0.5) * 0.3,
+  };
+}
+
+// ============ PIXEL ART ============
+function drawPixelBoy(cx, cy, skinColor, shirtColor, px) {
+  // A tiny 5x8 pixel boy
+  const p = px; // pixel size
+  function dot(x, y, c) {
+    ctx.fillStyle = c;
+    ctx.fillRect(cx + x * p, cy + y * p, p, p);
+  }
+  // Hair/head row 0-1
+  dot(-1, -4, '#3a2a1a'); dot(0, -4, '#3a2a1a'); dot(1, -4, '#3a2a1a');
+  // Face row 2
+  dot(-1, -3, skinColor); dot(0, -3, skinColor); dot(1, -3, skinColor);
+  // Eyes
+  dot(-1, -3, '#111'); dot(1, -3, '#111');
+  // Face row 3
+  dot(-1, -2, skinColor); dot(0, -2, skinColor); dot(1, -2, skinColor);
+  // Body rows 4-5
+  dot(-1, -1, shirtColor); dot(0, -1, shirtColor); dot(1, -1, shirtColor);
+  dot(-1, 0, shirtColor); dot(0, 0, shirtColor); dot(1, 0, shirtColor);
+  // Arms
+  dot(-2, -1, skinColor); dot(2, -1, skinColor);
+  // Legs rows 6-7
+  dot(-1, 1, '#224'); dot(1, 1, '#224');
+  dot(-1, 2, '#224'); dot(1, 2, '#224');
+  // Shoes
+  dot(-1, 3, '#333'); dot(1, 3, '#333');
+}
+
+function drawPixelBoys(centerX, centerY) {
+  const shirts = ['#cc2222', '#2266cc', '#ccaa00', '#eeeeee', '#22aa44'];
+  const skins = ['#e8b89a', '#d4a079', '#e8c49a', '#c48e6a', '#e8b89a'];
+  const px = 3; // pixel size
+  const spacing = 22;
+  const startX = centerX - spacing * 2;
+  for (let i = 0; i < 5; i++) {
+    drawPixelBoy(startX + i * spacing, centerY, skins[i], shirts[i], px);
+  }
+  // Label
+  ctx.fillStyle = '#1a4a15';
+  ctx.font = '9px Courier New';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  ctx.fillText('JASIX 2015', centerX, centerY + 14);
+}
+
+// ============ TRACK DRAWING ============
+function drawTrack() {
+  ctx.save();
+  ctx.translate(shakeX, shakeY);
+
+  // Green infield
+  ctx.fillStyle = '#2d5a1e';
+  ctx.beginPath();
+  ctx.moveTo(LEFT_CX, CY - R_INNER);
+  ctx.lineTo(RIGHT_CX, CY - R_INNER);
+  ctx.arc(RIGHT_CX, CY, R_INNER, -Math.PI / 2, Math.PI / 2);
+  ctx.lineTo(LEFT_CX, CY + R_INNER);
+  ctx.arc(LEFT_CX, CY, R_INNER, Math.PI / 2, -Math.PI / 2);
+  ctx.closePath();
+  ctx.fill();
+
+  // Track surface
+  ctx.fillStyle = '#888';
+  ctx.beginPath();
+  ctx.moveTo(LEFT_CX, CY - R_OUTER);
+  ctx.lineTo(RIGHT_CX, CY - R_OUTER);
+  ctx.arc(RIGHT_CX, CY, R_OUTER, -Math.PI / 2, Math.PI / 2);
+  ctx.lineTo(LEFT_CX, CY + R_OUTER);
+  ctx.arc(LEFT_CX, CY, R_OUTER, Math.PI / 2, -Math.PI / 2);
+  ctx.closePath();
+  ctx.moveTo(LEFT_CX, CY - R_INNER);
+  ctx.arc(LEFT_CX, CY, R_INNER, -Math.PI / 2, Math.PI / 2);
+  ctx.lineTo(RIGHT_CX, CY + R_INNER);
+  ctx.arc(RIGHT_CX, CY, R_INNER, Math.PI / 2, -Math.PI / 2);
+  ctx.closePath();
+  ctx.fill();
+
+  // Borders
+  ctx.strokeStyle = '#222';
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.moveTo(LEFT_CX, CY - R_OUTER);
+  ctx.lineTo(RIGHT_CX, CY - R_OUTER);
+  ctx.arc(RIGHT_CX, CY, R_OUTER, -Math.PI / 2, Math.PI / 2);
+  ctx.lineTo(LEFT_CX, CY + R_OUTER);
+  ctx.arc(LEFT_CX, CY, R_OUTER, Math.PI / 2, -Math.PI / 2);
+  ctx.closePath();
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(LEFT_CX, CY - R_INNER);
+  ctx.lineTo(RIGHT_CX, CY - R_INNER);
+  ctx.arc(RIGHT_CX, CY, R_INNER, -Math.PI / 2, Math.PI / 2);
+  ctx.lineTo(LEFT_CX, CY + R_INNER);
+  ctx.arc(LEFT_CX, CY, R_INNER, Math.PI / 2, -Math.PI / 2);
+  ctx.closePath();
+  ctx.stroke();
+
+  // Finish line
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 3;
+  ctx.setLineDash([6, 6]);
+  ctx.beginPath();
+  ctx.moveTo(CX, CY + R_INNER);
+  ctx.lineTo(CX, CY + R_OUTER);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Midpoint marker
+  ctx.strokeStyle = '#555';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4, 4]);
+  ctx.beginPath();
+  ctx.moveTo(CX, CY - R_INNER);
+  ctx.lineTo(CX, CY - R_OUTER);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Pixel art: 5 boys on the infield
+  drawPixelBoys(CX, CY);
+
+  ctx.restore();
+}
+
+// ============ COLLISION ============
+function isOnTrack(x, y) {
+  if (x >= LEFT_CX && x <= RIGHT_CX) {
+    return (y >= CY - R_OUTER && y <= CY - R_INNER) ||
+           (y >= CY + R_INNER && y <= CY + R_OUTER);
+  }
+  if (x < LEFT_CX) {
+    const dx = x - LEFT_CX, dy = y - CY;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    return dist >= R_INNER && dist <= R_OUTER;
+  }
+  if (x > RIGHT_CX) {
+    const dx = x - RIGHT_CX, dy = y - CY;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    return dist >= R_INNER && dist <= R_OUTER;
+  }
+  return false;
+}
+
+function pointToSegmentDistSq(px, py, ax, ay, bx, by) {
+  const abx = bx - ax, aby = by - ay;
+  const apx = px - ax, apy = py - ay;
+  const ab2 = abx * abx + aby * aby;
+  if (ab2 === 0) return apx * apx + apy * apy;
+  let t = (apx * abx + apy * aby) / ab2;
+  t = Math.max(0, Math.min(1, t));
+  const cx = ax + t * abx, cy = ay + t * aby;
+  const dx = px - cx, dy = py - cy;
+  return dx * dx + dy * dy;
+}
+
+function segmentsIntersect(ax, ay, bx, by, cx, cy, dx, dy) {
+  const d1x = bx - ax, d1y = by - ay;
+  const d2x = dx - cx, d2y = dy - cy;
+  const cross = d1x * d2y - d1y * d2x;
+  if (Math.abs(cross) < 0.001) return false;
+  const t = ((cx - ax) * d2y - (cy - ay) * d2x) / cross;
+  const u = ((cx - ax) * d1y - (cy - ay) * d1x) / cross;
+  return t >= 0 && t <= 1 && u >= 0 && u <= 1;
+}
+
+function checkTrailCollision(player) {
+  // Need at least 2 points in player's trail to form a segment
+  if (player.trail.length < 2) return false;
+  const hx = player.trail[0].x, hy = player.trail[0].y;
+  const px = player.trail[1].x, py = player.trail[1].y;
+
+  for (const other of players) {
+    if (other === player) continue;
+    const oTrail = other.trail;
+    if (oTrail.length < 2) continue;
+
+    for (let i = 0; i < oTrail.length - 1; i++) {
+      const ax = oTrail[i].x, ay = oTrail[i].y;
+      const bx = oTrail[i + 1].x, by = oTrail[i + 1].y;
+
+      // Check head point distance to trail segment
+      if (pointToSegmentDistSq(hx, hy, ax, ay, bx, by) < 16) return true;
+
+      // Check segment-segment intersection (player's last move vs trail segment)
+      if (segmentsIntersect(hx, hy, px, py, ax, ay, bx, by)) return true;
+    }
+
+    // Also head-to-head collision
+    if (other.alive && !other.finished && oTrail.length > 0) {
+      const dx = hx - other.x, dy = hy - other.y;
+      if (dx * dx + dy * dy < 25) return true;
+    }
+  }
+  return false;
+}
+
+// ============ AI ============
+function getIdealTheta(x, y) {
+  // Ideal heading for CCW: start right, curve up at right, go left on top, curve down at left
+
+  if (x >= LEFT_CX && x <= RIGHT_CX) {
+    if (y > CY) return 0;           // bottom straight → face right
+    else return Math.PI;             // top straight → face left (PI or -PI)
+  }
+
+  if (x > RIGHT_CX) {
+    // Right semicircle
+    const phi = Math.atan2(y - CY, x - RIGHT_CX);
+    return phi - Math.PI / 2;
+  }
+
+  // Left semicircle
+  const phi = Math.atan2(y - CY, x - LEFT_CX);
+  return phi - Math.PI / 2;
+}
+
+function distToInner(x, y) {
+  if (x >= LEFT_CX && x <= RIGHT_CX) {
+    if (y < CY) return y - (CY - R_OUTER);    // distance to outer wall (top)
+    else return (CY + R_OUTER) - y;             // distance to outer wall (bottom)
+  }
+  let cx = x < LEFT_CX ? LEFT_CX : RIGHT_CX;
+  const dist = Math.sqrt((x - cx) ** 2 + (y - CY) ** 2);
+  return dist - R_INNER;
+}
+
+function normalizeAngle(a) {
+  while (a > Math.PI) a -= 2 * Math.PI;
+  while (a < -Math.PI) a += 2 * Math.PI;
+  return a;
+}
+
+function updateCPU(p) {
+  // CPU AI: decide whether to "press" the turn key this frame
+  // Level 1 (Leszcz): very inaccurate, slow reactions
+  // Level 5 (Jaguar): near-perfect, stays on racing line
+
+  const level = p.cpuLevel;
+
+  // Noise decreases with level
+  const noiseMagnitude = [0, 0.12, 0.07, 0.04, 0.02, 0.005][level];
+  // Reaction threshold: how much angular error before correcting
+  const threshold = [0, 0.15, 0.10, 0.06, 0.03, 0.012][level];
+  // Random skip chance (lower level = sometimes doesn't react)
+  const skipChance = [0, 0.15, 0.08, 0.03, 0.01, 0][level];
+
+  if (Math.random() < skipChance) return false;
+
+  const idealTheta = getIdealTheta(p.x, p.y);
+  const noise = p.cpuNoiseOffset * noiseMagnitude * 2;
+  const targetTheta = idealTheta + noise;
+
+  // Slowly drift the noise offset
+  p.cpuNoiseOffset += (Math.random() - 0.5) * 0.1;
+  p.cpuNoiseOffset = Math.max(-1, Math.min(1, p.cpuNoiseOffset));
+
+  const diff = normalizeAngle(targetTheta - p.theta);
+
+  // If diff < 0, we need to decrease theta → press key (turn right from driver POV)
+  if (diff < -threshold) {
+    return true; // press turn
+  }
+
+  // For lower levels, occasionally press when shouldn't
+  if (level <= 2 && Math.random() < 0.02) return true;
+
+  return false;
+}
+
+// ============ LAP DETECTION ============
+function checkLaps(p) {
+  if (p.y < CY && p.x >= CX - 10 && p.x <= CX + 10) {
+    p.crossedMidpoint = true;
+  }
+  if (p.crossedMidpoint && p.y > CY && p.x >= CX - 10 && p.x <= CX + 10) {
+    p.laps++;
+    p.crossedMidpoint = false;
+    beep(880, 0.1);
+    if (p.laps >= totalLaps && !p.finished) {
+      p.finished = true;
+      finishOrder.push(p);
+      beep(1200, 0.2);
+    }
+  }
+}
+
+// ============ UPDATE ============
+function update() {
+  if (gameState !== 'RACING') return;
+
+  if (shakeTimer > 0) {
+    shakeTimer--;
+    shakeX = (Math.random() - 0.5) * shakeTimer * 0.8;
+    shakeY = (Math.random() - 0.5) * shakeTimer * 0.8;
+  } else {
+    shakeX = 0; shakeY = 0;
+  }
+
+  for (const p of players) {
+    if (!p.alive || p.finished) continue;
+
+    // CPU auto-eliminate if last active player (already won)
+    if (p.isCPU) {
+      const othersActive = players.some(o => o !== p && (o.alive && !o.finished));
+      if (!othersActive) {
+        eliminatePlayer(p);
+        continue;
+      }
+    }
+
+    // Determine if turning
+    let turning = false;
+    if (p.isCPU) {
+      turning = updateCPU(p);
+    } else {
+      turning = !!keysDown[p.key];
+    }
+
+    if (turning) {
+      p.theta -= OMEGA;
+    }
+
+    const speed = turning ? V_TURN : V;
+    p.x += speed * Math.cos(p.theta);
+    p.y += speed * Math.sin(p.theta);
+
+    p.trail.unshift({ x: p.x, y: p.y });
+    if (p.trail.length > TRAIL_LEN) p.trail.pop();
+
+    if (!isOnTrack(p.x, p.y)) {
+      eliminatePlayer(p);
+      continue;
+    }
+
+    checkLaps(p);
+  }
+
+  const activeCount = players.filter(p => p.alive && !p.finished).length;
+  if (activeCount === 0) {
+    endHeat();
+  }
+}
+
+function eliminatePlayer(p) {
+  p.alive = false;
+  shakeTimer = 10;
+  beep(200, 0.3);
+}
+
+// ============ DRAW ============
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawTrack();
+
+  ctx.save();
+  ctx.translate(shakeX, shakeY);
+
+  for (const p of players) {
+    const len = p.trail.length;
+    if (len < 2) continue;
+
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    for (let i = 0; i < len - 1; i++) {
+      const alpha = p.alive || p.finished
+        ? 1.0 - (i / len) * 0.9
+        : 0.3 - (i / len) * 0.25;
+      const baseColor = p.alive || p.finished ? p.color : '#555';
+      ctx.strokeStyle = colorWithAlpha(baseColor, Math.max(0.05, alpha));
+      ctx.lineWidth = 3 - (i / len) * 1.5;
+      ctx.beginPath();
+      ctx.moveTo(p.trail[i].x, p.trail[i].y);
+      ctx.lineTo(p.trail[i + 1].x, p.trail[i + 1].y);
+      ctx.stroke();
+    }
+
+    if (p.alive && !p.finished) {
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowColor = p.color;
+      ctx.shadowBlur = 8;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+  }
+
+  // HUD
+  ctx.font = '12px Courier New';
+  ctx.textAlign = 'left';
+  let infoY = 20;
+  for (const p of players) {
+    ctx.fillStyle = p.alive ? p.color : '#555';
+    const cpuTag = p.isCPU ? ' [CPU]' : '';
+    const status = p.finished ? 'META!' : p.alive ? `Okr: ${p.laps}/${totalLaps}` : 'ODPADA';
+    ctx.fillText(`${p.name}${cpuTag}: ${status}`, 10, infoY);
+    infoY += 16;
+  }
+
+  ctx.restore();
+}
+
+function colorWithAlpha(hex, alpha) {
+  let r, g, b;
+  if (hex.length === 4) {
+    r = parseInt(hex[1] + hex[1], 16);
+    g = parseInt(hex[2] + hex[2], 16);
+    b = parseInt(hex[3] + hex[3], 16);
+  } else {
+    r = parseInt(hex.slice(1, 3), 16);
+    g = parseInt(hex.slice(3, 5), 16);
+    b = parseInt(hex.slice(5, 7), 16);
+  }
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+// ============ SCOREBOARD ============
+function updateScoreboard() {
+  const sb = document.getElementById('scoreboard');
+  sb.innerHTML = '';
+  for (const p of players) {
+    const row = document.createElement('div');
+    row.className = 'player-row';
+    const status = p.finished ? 'META!' : p.alive ? `Okr. ${p.laps}/${totalLaps}` : 'Odpada';
+    const cpuTag = p.isCPU ? ' <span style="color:#666;font-size:10px">[CPU]</span>' : '';
+    row.innerHTML = `
+      <div class="player-dot" style="background:${p.alive || p.finished ? p.color : '#555'}"></div>
+      <div class="player-name">${p.name}${cpuTag}</div>
+      <div class="player-info">${status}</div>
+    `;
+    sb.appendChild(row);
+  }
+
+  const tsl = document.getElementById('total-scores-list');
+  tsl.innerHTML = '';
+  const sorted = playerCfg.map((c, i) => ({ name: c.name, color: COLORS[i], pts: totalPoints[i] }))
+    .sort((a, b) => b.pts - a.pts);
+  for (const s of sorted) {
+    const row = document.createElement('div');
+    row.className = 'player-row';
+    row.innerHTML = `
+      <div class="player-dot" style="background:${s.color}"></div>
+      <div class="player-name">${s.name}</div>
+      <div class="player-info">${s.pts} pkt</div>
+    `;
+    tsl.appendChild(row);
+  }
+}
+
+function updateHeatInfo() {
+  document.getElementById('heat-info').textContent =
+    `Bieg ${currentHeat} / ${totalHeats} \u2022 ${totalLaps} okr.`;
+}
+
+// ============ GAME FLOW ============
+function readSetup() {
+  for (let i = 0; i < 4; i++) {
+    playerCfg[i].name = document.getElementById('name' + i).value.trim() || ('Gracz ' + (i + 1));
+    playerCfg[i].key = (document.getElementById('key' + i).textContent.trim() || 'q').toLowerCase();
+    // Handle special key display names
+    const btnText = document.getElementById('key' + i).textContent.trim();
+    if (btnText === 'Space') playerCfg[i].key = ' ';
+    else if (btnText.length > 1) playerCfg[i].key = btnText.toLowerCase();
+    else playerCfg[i].key = btnText.toLowerCase();
+
+    playerCfg[i].isCPU = document.getElementById('cpu' + i).checked;
+    playerCfg[i].cpuLevel = parseInt(document.getElementById('lvl' + i).value) || 3;
+  }
+  totalLaps = Math.max(1, Math.min(20, parseInt(document.getElementById('param-laps').value) || 4));
+  totalHeats = Math.max(1, Math.min(20, parseInt(document.getElementById('param-heats').value) || 4));
+}
+
+function startTournament() {
+  initAudio();
+  readSetup();
+  totalPoints = [0, 0, 0, 0];
+  currentHeat = 0;
+  document.getElementById('setup-screen').classList.add('hidden');
+  document.getElementById('results-screen').classList.add('hidden');
+
+  // Update sidebar controls
+  const ctrl = document.getElementById('controls');
+  let html = '';
+  for (let i = 0; i < 4; i++) {
+    const c = playerCfg[i];
+    if (c.isCPU) {
+      html += `<span style="color:${COLORS[i]}">\u25CF</span> ${c.name} <span style="color:#666">[CPU ${LEVEL_NAMES[c.cpuLevel]}]</span><br>`;
+    } else {
+      const keyDisplay = c.key === ' ' ? 'Space' : c.key.toUpperCase();
+      html += `<span>${keyDisplay}</span> - ${c.name}<br>`;
+    }
+  }
+  html += '<br>Przytrzymaj klawisz = skręt w lewo';
+  ctrl.innerHTML = html;
+
+  startHeat();
+}
+
+function startHeat() {
+  currentHeat++;
+  finishOrder = [];
+  players = [0, 1, 2, 3].map(i => createPlayer(i));
+
+  document.getElementById('results-screen').classList.add('hidden');
+  gameState = 'COUNTDOWN';
+  updateHeatInfo();
+  updateScoreboard();
+
+  const cdEl = document.getElementById('countdown');
+  cdEl.style.display = 'block';
+  let count = 3;
+  cdEl.textContent = count;
+  beep(440, 0.15);
+
+  const cdInterval = setInterval(() => {
+    count--;
+    if (count > 0) {
+      cdEl.textContent = count;
+      beep(440, 0.15);
+    } else if (count === 0) {
+      cdEl.textContent = 'START!';
+      beep(880, 0.3);
+    } else {
+      clearInterval(cdInterval);
+      cdEl.style.display = 'none';
+      gameState = 'RACING';
+    }
+  }, 800);
+}
+
+function endHeat() {
+  gameState = 'HEAT_RESULTS';
+
+  const eliminated = players.filter(p => !p.finished && !p.alive)
+    .sort((a, b) => b.laps - a.laps);
+  const stillGoing = players.filter(p => p.alive && !p.finished)
+    .sort((a, b) => b.laps - a.laps);
+  const finalOrder = [...finishOrder, ...stillGoing, ...eliminated];
+
+  const pointsTable = [3, 2, 1, 0];
+  finalOrder.forEach((p, i) => {
+    const pts = pointsTable[i] || 0;
+    p.heatPoints = pts;
+    totalPoints[p.index] += pts;
+  });
+
+  updateScoreboard();
+
+  const isLast = currentHeat >= totalHeats;
+  document.getElementById('results-title').textContent =
+    isLast ? 'WYNIKI KOŃCOWE' : `WYNIKI BIEGU ${currentHeat}`;
+
+  const rl = document.getElementById('results-list');
+  rl.innerHTML = '';
+  finalOrder.forEach((p, i) => {
+    const div = document.createElement('div');
+    div.className = 'result-line';
+    div.style.color = p.color;
+    const statusText = p.finished ? 'META' : p.alive ? `Okr. ${p.laps}` : 'Odpada';
+    div.textContent = `${i + 1}. ${p.name} \u2014 ${p.heatPoints} pkt (${statusText})`;
+    rl.appendChild(div);
+  });
+
+  const ft = document.getElementById('final-total');
+  const ftl = document.getElementById('final-total-list');
+  ft.style.display = 'block';
+  ftl.innerHTML = '';
+  const sorted = playerCfg.map((c, i) => ({ name: c.name, color: COLORS[i], pts: totalPoints[i] }))
+    .sort((a, b) => b.pts - a.pts);
+  sorted.forEach((s, i) => {
+    const div = document.createElement('div');
+    div.className = 'result-line';
+    div.style.color = s.color;
+    div.style.fontSize = isLast ? '20px' : '15px';
+    div.textContent = `${i + 1}. ${s.name} \u2014 ${s.pts} pkt`;
+    ftl.appendChild(div);
+  });
+
+  const btn = document.getElementById('btn-next');
+  btn.textContent = isLast ? 'NOWA GRA' : 'NASTĘPNY BIEG';
+  btn.onclick = isLast ? showSetup : startHeat;
+
+  document.getElementById('results-screen').classList.remove('hidden');
+
+  beep(600, 0.15);
+  setTimeout(() => beep(800, 0.15), 200);
+  setTimeout(() => beep(1000, 0.3), 400);
+}
+
+function showSetup() {
+  gameState = 'SETUP';
+  document.getElementById('results-screen').classList.add('hidden');
+  document.getElementById('setup-screen').classList.remove('hidden');
+}
+
+// ============ INPUT ============
+document.addEventListener('keydown', (e) => {
+  // If we're binding a key on setup screen, capture it
+  if (listeningForKey >= 0 && gameState === 'SETUP') {
+    handleKeyBindCapture(e);
+    return;
+  }
+  keysDown[e.key.toLowerCase()] = true;
+  // Also handle space specially
+  if (e.key === ' ') keysDown[' '] = true;
+});
+document.addEventListener('keyup', (e) => {
+  keysDown[e.key.toLowerCase()] = false;
+  if (e.key === ' ') keysDown[' '] = false;
+});
+
+document.getElementById('btn-start').addEventListener('click', startTournament);
+
+// Init key binding UI
+setupKeyBindingUI();
+
+// ============ GAME LOOP ============
+function gameLoop() {
+  update();
+  draw();
+  if (gameState === 'RACING' || gameState === 'COUNTDOWN') {
+    updateScoreboard();
+  }
+  requestAnimationFrame(gameLoop);
+}
+
+draw();
+gameLoop();
+</script>
+</body>
+</html>
