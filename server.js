@@ -142,6 +142,6 @@ wss.on('connection', (ws) => {
   });
 });
 
-server.listen(PORT, () => {
-  console.log(`Zuzel server running on http://localhost:${PORT}`);
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`Zuzel server running on http://0.0.0.0:${PORT}`);
 });
