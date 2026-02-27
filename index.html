@@ -326,11 +326,31 @@ canvas {
 #btn-fullscreen:active { background: #555; }
 
 #mobile-controls {
-  display: none;
+  display: flex;
   flex-direction: column;
   align-items: center;
   width: 100%;
   padding: 0 10px;
+}
+
+/* === LANDSCAPE HINT === */
+#rotate-hint {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.95);
+  z-index: 9999;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  color: #ff6600;
+  font-size: 20px;
+  text-align: center;
+  padding: 20px;
+}
+#rotate-hint .rotate-icon {
+  font-size: 60px;
+  margin-bottom: 16px;
 }
 
 /* === MOBILE === */
@@ -347,21 +367,39 @@ canvas {
   .setup-box { width: 90%; max-width: 500px; }
   #btn-turn { width: 90%; max-width: 400px; }
   #btn-fullscreen { width: 90%; max-width: 400px; }
-  #mobile-controls { display: flex; }
 }
 
 @media (max-width: 500px) {
   .overlay h1 { font-size: 18px; }
   #btn-turn { height: 60px; font-size: 22px; }
+  #btn-fullscreen { height: 40px; font-size: 14px; }
   #sidebar { font-size: 12px; padding: 8px; }
 }
 
+/* Portrait on mobile: show rotate hint during game */
+@media (max-width: 900px) and (orientation: portrait) {
+  #rotate-hint.active { display: flex; }
+}
+
 /* Fullscreen mode */
+:fullscreen body { flex-direction: column; overflow-y: auto; height: auto; }
 :fullscreen #sidebar { display: none !important; }
+:fullscreen #game-area { padding: 5px; }
+:fullscreen canvas { max-height: 80vh; width: auto; }
+:fullscreen #btn-turn { width: 90%; max-width: 500px; }
+:-webkit-full-screen body { flex-direction: column; overflow-y: auto; height: auto; }
 :-webkit-full-screen #sidebar { display: none !important; }
+:-webkit-full-screen #game-area { padding: 5px; }
+:-webkit-full-screen canvas { max-height: 80vh; width: auto; }
+:-webkit-full-screen #btn-turn { width: 90%; max-width: 500px; }
 </style>
 </head>
 <body>
+
+<div id="rotate-hint">
+  <div class="rotate-icon">&#128257;</div>
+  <div>Obroc telefon poziomo<br>dla lepszej rozgrywki!</div>
+</div>
 
 <div id="game-area">
   <canvas id="track" width="800" height="600"></canvas>
@@ -1112,6 +1150,7 @@ function startTournament() {
   document.getElementById('results-screen').classList.add('hidden');
   document.getElementById('btn-turn').style.display = 'block';
   document.getElementById('btn-fullscreen').style.display = 'block';
+  document.getElementById('rotate-hint').classList.add('active');
 
   // Update sidebar controls
   const ctrl = document.getElementById('controls');
@@ -1228,6 +1267,7 @@ function showSetup() {
   document.getElementById('setup-screen').classList.remove('hidden');
   document.getElementById('btn-turn').style.display = 'none';
   document.getElementById('btn-fullscreen').style.display = 'none';
+  document.getElementById('rotate-hint').classList.remove('active');
 }
 
 // ============ INPUT ============
@@ -1296,6 +1336,20 @@ document.addEventListener('fullscreenchange', () => {
 });
 document.addEventListener('webkitfullscreenchange', () => {
   btnFullscreen.textContent = document.webkitFullscreenElement ? 'WYJDZ Z FULLSCREEN' : 'PELNY EKRAN';
+});
+
+// ============ ROTATE HINT ============
+const rotateHint = document.getElementById('rotate-hint');
+rotateHint.addEventListener('click', () => rotateHint.classList.remove('active'));
+window.addEventListener('orientationchange', () => {
+  if (window.innerWidth > window.innerHeight) {
+    rotateHint.classList.remove('active');
+  }
+});
+window.addEventListener('resize', () => {
+  if (window.innerWidth > window.innerHeight) {
+    rotateHint.classList.remove('active');
+  }
 });
 
 document.getElementById('btn-start').addEventListener('click', startTournament);
