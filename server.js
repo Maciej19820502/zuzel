@@ -51,7 +51,11 @@ function broadcastLobby() {
   }
 }
 
-function tryMatch() {
+let matchCountdown = null; // { timer, startTime }
+
+function startMatch() {
+  matchCountdown = null;
+
   const idle = lobbyPlayers.filter(p => !wsToMatch.has(p.ws));
   if (idle.length < 2) return;
 
@@ -91,7 +95,61 @@ function tryMatch() {
   }
 }
 
-setInterval(tryMatch, 2000);
+function tryMatch() {
+  const idle = lobbyPlayers.filter(p => !wsToMatch.has(p.ws));
+
+  // If 4 players ready, start immediately
+  if (idle.length >= 4) {
+    if (matchCountdown) {
+      clearTimeout(matchCountdown.timer);
+    }
+    startMatch();
+    return;
+  }
+
+  // If 2-3 players, start 10s countdown (if not already running)
+  if (idle.length >= 2 && !matchCountdown) {
+    const remaining = 10;
+    // Broadcast countdown to lobby players
+    for (const p of idle) {
+      try {
+        p.ws.send(JSON.stringify({ type: 'lobby_countdown', seconds: remaining }));
+      } catch (e) {}
+    }
+    matchCountdown = {
+      timer: setTimeout(() => {
+        startMatch();
+      }, remaining * 1000),
+      startTime: Date.now(),
+    };
+    return;
+  }
+
+  // If countdown is running, broadcast remaining time
+  if (matchCountdown && idle.length >= 2) {
+    const elapsed = (Date.now() - matchCountdown.startTime) / 1000;
+    const remaining = Math.ceil(10 - elapsed);
+    for (const p of idle) {
+      try {
+        p.ws.send(JSON.stringify({ type: 'lobby_countdown', seconds: remaining }));
+      } catch (e) {}
+    }
+  }
+
+  // If players dropped below 2, cancel countdown
+  if (idle.length < 2 && matchCountdown) {
+    clearTimeout(matchCountdown.timer);
+    matchCountdown = null;
+    // Notify remaining players countdown cancelled
+    for (const p of idle) {
+      try {
+        p.ws.send(JSON.stringify({ type: 'lobby_countdown', seconds: -1 }));
+      } catch (e) {}
+    }
+  }
+}
+
+setInterval(tryMatch, 1000);
 
 wss.on('connection', (ws) => {
   ws.on('message', (raw) => {

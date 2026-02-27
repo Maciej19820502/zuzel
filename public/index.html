@@ -675,6 +675,10 @@ function handleMessage(msg) {
       updateLobbyList(msg);
       break;
 
+    case 'lobby_countdown':
+      handleLobbyCountdown(msg.seconds);
+      break;
+
     case 'assigned':
       mySlot = msg.slot;
       showGame();
@@ -709,8 +713,21 @@ function updateLobbyList(msg) {
       const isMe = p.index === msg.you;
       html += `<div class="wl-player" style="${isMe ? 'color:#ff6600;font-weight:bold' : ''}">${p.name}${isMe ? ' (ty)' : ''}</div>`;
     }
-    html += '<div style="color:#555;font-size:11px;margin-top:6px">Mecz startuje automatycznie gdy 2+ graczy</div>';
+    html += '<div id="lobby-cd-info" style="color:#555;font-size:11px;margin-top:6px">Mecz startuje automatycznie gdy 2+ graczy</div>';
     wl.innerHTML = html;
+  }
+}
+
+function handleLobbyCountdown(seconds) {
+  const el = document.getElementById('lobby-cd-info');
+  if (!el) return;
+  if (seconds < 0) {
+    el.style.color = '#555';
+    el.textContent = 'Mecz startuje automatycznie gdy 2+ graczy';
+  } else {
+    el.style.color = '#ff6600';
+    el.style.fontWeight = 'bold';
+    el.textContent = 'Mecz startuje za ' + seconds + 's... Czekam na wiecej graczy!';
   }
 }
 
