@@ -2,6 +2,9 @@
 <html lang="pl">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
 <title>Grand Prix JASIX2015</title>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -50,6 +53,8 @@ body {
 canvas {
   border: 2px solid #444;
   background: #1a1a1a;
+  max-width: 100%;
+  height: auto;
 }
 #sidebar {
   width: 280px;
@@ -299,6 +304,61 @@ canvas {
   z-index: 5;
   display: none;
 }
+
+#btn-fullscreen {
+  display: none;
+  width: 300px;
+  height: 50px;
+  margin-top: 6px;
+  font-size: 18px;
+  font-family: 'Courier New', monospace;
+  font-weight: bold;
+  background: #333;
+  color: #eee;
+  border: 2px solid #666;
+  border-radius: 10px;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+#btn-fullscreen:active { background: #555; }
+
+#mobile-controls {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  padding: 0 10px;
+}
+
+/* === MOBILE === */
+@media (max-width: 900px) {
+  body { flex-direction: column; height: auto; min-height: 100vh; overflow-y: auto; }
+  #game-area { min-height: auto; padding: 5px; }
+  #sidebar {
+    width: 100% !important;
+    border-left: none;
+    border-top: 2px solid #444;
+    max-height: 200px;
+  }
+  .overlay h1 { font-size: 22px; }
+  .setup-box { width: 90%; max-width: 500px; }
+  #btn-turn { width: 90%; max-width: 400px; }
+  #btn-fullscreen { width: 90%; max-width: 400px; }
+  #mobile-controls { display: flex; }
+}
+
+@media (max-width: 500px) {
+  .overlay h1 { font-size: 18px; }
+  #btn-turn { height: 60px; font-size: 22px; }
+  #sidebar { font-size: 12px; padding: 8px; }
+}
+
+/* Fullscreen mode */
+:fullscreen #sidebar { display: none !important; }
+:-webkit-full-screen #sidebar { display: none !important; }
 </style>
 </head>
 <body>
@@ -306,7 +366,10 @@ canvas {
 <div id="game-area">
   <canvas id="track" width="800" height="600"></canvas>
   <div id="countdown"></div>
-  <button id="btn-turn">SKRET</button>
+  <div id="mobile-controls">
+    <button id="btn-turn">SKRET</button>
+    <button id="btn-fullscreen">PELNY EKRAN</button>
+  </div>
 
   <!-- SETUP SCREEN -->
   <div id="setup-screen" class="overlay">
@@ -1048,6 +1111,7 @@ function startTournament() {
   document.getElementById('setup-screen').classList.add('hidden');
   document.getElementById('results-screen').classList.add('hidden');
   document.getElementById('btn-turn').style.display = 'block';
+  document.getElementById('btn-fullscreen').style.display = 'block';
 
   // Update sidebar controls
   const ctrl = document.getElementById('controls');
@@ -1163,6 +1227,7 @@ function showSetup() {
   document.getElementById('results-screen').classList.add('hidden');
   document.getElementById('setup-screen').classList.remove('hidden');
   document.getElementById('btn-turn').style.display = 'none';
+  document.getElementById('btn-fullscreen').style.display = 'none';
 }
 
 // ============ INPUT ============
@@ -1207,6 +1272,31 @@ btnTurn.addEventListener('touchcancel', mobileTurnOff);
 btnTurn.addEventListener('mousedown', mobileTurnOn);
 btnTurn.addEventListener('mouseup', mobileTurnOff);
 btnTurn.addEventListener('mouseleave', mobileTurnOff);
+
+// ============ FULLSCREEN ============
+const btnFullscreen = document.getElementById('btn-fullscreen');
+btnFullscreen.addEventListener('click', () => {
+  const doc = document.documentElement;
+  if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+    const rfs = doc.requestFullscreen || doc.webkitRequestFullscreen;
+    if (rfs) {
+      rfs.call(doc).then(() => {
+        try { screen.orientation.lock('landscape'); } catch(e) {}
+      }).catch(() => {});
+    }
+    btnFullscreen.textContent = 'WYJDZ Z FULLSCREEN';
+  } else {
+    const efs = document.exitFullscreen || document.webkitExitFullscreen;
+    if (efs) efs.call(document);
+    btnFullscreen.textContent = 'PELNY EKRAN';
+  }
+});
+document.addEventListener('fullscreenchange', () => {
+  btnFullscreen.textContent = document.fullscreenElement ? 'WYJDZ Z FULLSCREEN' : 'PELNY EKRAN';
+});
+document.addEventListener('webkitfullscreenchange', () => {
+  btnFullscreen.textContent = document.webkitFullscreenElement ? 'WYJDZ Z FULLSCREEN' : 'PELNY EKRAN';
+});
 
 document.getElementById('btn-start').addEventListener('click', startTournament);
 

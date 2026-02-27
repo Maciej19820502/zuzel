@@ -2,6 +2,9 @@
 <html lang="pl">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
 <title>Grand Prix JASIX2015 - Online</title>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -26,6 +29,8 @@ canvas {
   border: 2px solid #444;
   background: #1a1a1a;
   display: none;
+  max-width: 100%;
+  height: auto;
 }
 #btn-turn {
   display: none;
@@ -283,6 +288,64 @@ canvas {
 .mc-ad .mc-label { font-size: 11px; color: #8c8; }
 .mc-ad .mc-ip { font-size: 16px; color: #fff; font-weight: bold; margin: 4px 0; }
 .mc-ad .mc-port { font-size: 12px; color: #cdc; }
+
+#btn-fullscreen {
+  display: none;
+  width: 300px;
+  height: 50px;
+  margin-top: 6px;
+  font-size: 18px;
+  font-family: 'Courier New', monospace;
+  font-weight: bold;
+  background: #333;
+  color: #eee;
+  border: 2px solid #666;
+  border-radius: 10px;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+#btn-fullscreen:active { background: #555; }
+
+#mobile-controls {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  padding: 0 10px;
+}
+
+/* === MOBILE === */
+@media (max-width: 900px) {
+  body { flex-direction: column; height: auto; min-height: 100vh; overflow-y: auto; }
+  #game-area { min-height: auto; padding: 5px; }
+  #sidebar {
+    width: 100% !important;
+    border-left: none;
+    border-top: 2px solid #444;
+    max-height: 200px;
+  }
+  #lobby-screen h1 { font-size: 22px; }
+  #lobby-screen h3 { font-size: 12px; }
+  .lobby-box { width: 90%; max-width: 400px; padding: 14px; }
+  .lobby-box input[type="text"] { width: 160px; }
+  #btn-turn { width: 90%; max-width: 400px; }
+  #btn-fullscreen { width: 90%; max-width: 400px; }
+  #mobile-controls { display: flex; }
+  .mc-ad { display: none; }
+}
+
+@media (max-width: 500px) {
+  #lobby-screen h1 { font-size: 18px; }
+  #btn-turn { height: 60px; font-size: 22px; }
+  #sidebar { font-size: 12px; padding: 8px; }
+}
+
+/* Fullscreen mode */
+:fullscreen #sidebar { display: none !important; }
+:-webkit-full-screen #sidebar { display: none !important; }
 </style>
 </head>
 <body>
@@ -313,7 +376,10 @@ canvas {
   <!-- GAME -->
   <canvas id="track" width="800" height="600"></canvas>
   <div id="countdown"></div>
-  <button id="btn-turn">SKRET</button>
+  <div id="mobile-controls">
+    <button id="btn-turn">SKRET</button>
+    <button id="btn-fullscreen">PELNY EKRAN</button>
+  </div>
   <button id="btn-abort">ZAKONCZ MECZ</button>
 
   <!-- RESULTS OVERLAY -->
@@ -500,6 +566,31 @@ btnTurn.addEventListener('mousedown', mobileTurnOn);
 btnTurn.addEventListener('mouseup', mobileTurnOff);
 btnTurn.addEventListener('mouseleave', mobileTurnOff);
 
+// ============ FULLSCREEN ============
+const btnFullscreen = document.getElementById('btn-fullscreen');
+btnFullscreen.addEventListener('click', () => {
+  const doc = document.documentElement;
+  if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+    const rfs = doc.requestFullscreen || doc.webkitRequestFullscreen;
+    if (rfs) {
+      rfs.call(doc).then(() => {
+        try { screen.orientation.lock('landscape'); } catch(e) {}
+      }).catch(() => {});
+    }
+    btnFullscreen.textContent = 'WYJDZ Z FULLSCREEN';
+  } else {
+    const efs = document.exitFullscreen || document.webkitExitFullscreen;
+    if (efs) efs.call(document);
+    btnFullscreen.textContent = 'PELNY EKRAN';
+  }
+});
+document.addEventListener('fullscreenchange', () => {
+  btnFullscreen.textContent = document.fullscreenElement ? 'WYJDZ Z FULLSCREEN' : 'PELNY EKRAN';
+});
+document.addEventListener('webkitfullscreenchange', () => {
+  btnFullscreen.textContent = document.webkitFullscreenElement ? 'WYJDZ Z FULLSCREEN' : 'PELNY EKRAN';
+});
+
 // ============ WEBSOCKET ============
 function connect() {
   const proto = location.protocol === 'https:' ? 'wss' : 'ws';
@@ -600,6 +691,7 @@ function showLobby() {
   document.getElementById('countdown').style.display = 'none';
   document.getElementById('btn-abort').style.display = 'none';
   document.getElementById('btn-turn').style.display = 'none';
+  document.getElementById('btn-fullscreen').style.display = 'none';
 }
 
 function showGame() {
@@ -612,6 +704,7 @@ function showGame() {
   document.getElementById('results-screen').classList.add('hidden');
   document.getElementById('btn-abort').style.display = 'block';
   document.getElementById('btn-turn').style.display = 'block';
+  document.getElementById('btn-fullscreen').style.display = 'block';
 }
 
 // ============ ABORT BUTTON ============
