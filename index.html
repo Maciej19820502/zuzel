@@ -20,6 +20,32 @@ body {
   justify-content: center;
   align-items: center;
   position: relative;
+  flex-direction: column;
+}
+#btn-turn {
+  display: none;
+  width: 300px;
+  height: 70px;
+  margin-top: 10px;
+  font-size: 28px;
+  font-family: 'Courier New', monospace;
+  font-weight: bold;
+  background: #ff6600;
+  color: #fff;
+  border: 3px solid #ff9933;
+  border-radius: 12px;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  text-shadow: 0 0 10px rgba(255,102,0,0.8);
+  box-shadow: 0 0 20px rgba(255,102,0,0.4);
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+#btn-turn:active, #btn-turn.pressed {
+  background: #cc5200;
+  box-shadow: 0 0 30px rgba(255,102,0,0.8);
+  transform: scale(0.96);
 }
 canvas {
   border: 2px solid #444;
@@ -280,6 +306,7 @@ canvas {
 <div id="game-area">
   <canvas id="track" width="800" height="600"></canvas>
   <div id="countdown"></div>
+  <button id="btn-turn">SKRET</button>
 
   <!-- SETUP SCREEN -->
   <div id="setup-screen" class="overlay">
@@ -1020,6 +1047,7 @@ function startTournament() {
   currentHeat = 0;
   document.getElementById('setup-screen').classList.add('hidden');
   document.getElementById('results-screen').classList.add('hidden');
+  document.getElementById('btn-turn').style.display = 'block';
 
   // Update sidebar controls
   const ctrl = document.getElementById('controls');
@@ -1134,6 +1162,7 @@ function showSetup() {
   gameState = 'SETUP';
   document.getElementById('results-screen').classList.add('hidden');
   document.getElementById('setup-screen').classList.remove('hidden');
+  document.getElementById('btn-turn').style.display = 'none';
 }
 
 // ============ INPUT ============
@@ -1151,6 +1180,33 @@ document.addEventListener('keyup', (e) => {
   keysDown[e.key.toLowerCase()] = false;
   if (e.key === ' ') keysDown[' '] = false;
 });
+
+// ============ MOBILE TURN BUTTON ============
+const btnTurn = document.getElementById('btn-turn');
+function getMobileKey() {
+  for (let i = 0; i < 4; i++) {
+    if (!playerCfg[i].isCPU) return playerCfg[i].key;
+  }
+  return null;
+}
+function mobileTurnOn(e) {
+  e.preventDefault();
+  const k = getMobileKey();
+  if (k) keysDown[k] = true;
+  btnTurn.classList.add('pressed');
+}
+function mobileTurnOff(e) {
+  e.preventDefault();
+  const k = getMobileKey();
+  if (k) keysDown[k] = false;
+  btnTurn.classList.remove('pressed');
+}
+btnTurn.addEventListener('touchstart', mobileTurnOn);
+btnTurn.addEventListener('touchend', mobileTurnOff);
+btnTurn.addEventListener('touchcancel', mobileTurnOff);
+btnTurn.addEventListener('mousedown', mobileTurnOn);
+btnTurn.addEventListener('mouseup', mobileTurnOff);
+btnTurn.addEventListener('mouseleave', mobileTurnOff);
 
 document.getElementById('btn-start').addEventListener('click', startTournament);
 
